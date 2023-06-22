@@ -7,40 +7,39 @@ set "root_directory=%~dp0"
 rem Change to the root directory
 cd /d "%root_directory%"
 
-rem Function to extract and rename files/folders
-:ExtractAndRename
+rem Extract all compressed files at the root folder
 for %%f in (*.zip *.rar *.7z) do (
-    set "file_name=%%~nf"
-    set "file_extension=%%~xf"
+    rem Get the compressed file name without extension
+    set "compressed_file_name=%%~nf"
 
     rem Create a folder with the same name as the compressed file
-    if not exist "!file_name!" mkdir "!file_name!"
+    mkdir "!compressed_file_name!" > nul 2>&1
 
     rem Extract the compressed file into the created folder
-    7z x -o"!file_name!" "%%f" > nul
+    7z x "%%f" -o"!compressed_file_name!" > nul 2>&1
 
-    rem Rename the folder with the compressed file's name
-    ren "!file_name!" "!file_name!_%timestamp%"
+    rem Rename the folder with the compressed file name
+    ren "!compressed_file_name!" "%%~nf"
 
-    rem Rename every file (except .bat files) inside the folder
-    pushd "!file_name!_%timestamp%"
-    for %%g in (*) do (
-        if not "%%~xg"==".bat" (
-            set "sub_file_name=%%~ng"
-            set "sub_file_extension=%%~xg"
-            ren "%%g" "!sub_file_name!_%timestamp%!sub_file_extension!"
+    rem Get the current timestamp (including milliseconds)
+    for /f "tokens=1-4 delims=:. " %%a in ("%time%") do (
+        set "hour=0%%a"
+        set "minute=0%%b"
+        set "second=0%%c"
+        set "millisecond=00%%d"
+    )
+    set "timestamp=%date:/=-%_%hour:~-2%%minute:~-2%%second:~-2%_%millisecond:~-3%"
+
+    rem Rename every file (except .bat files) inside the extracted folder
+    for /r "%%~nf" %%x in (*) do (
+        if not "%%~xx"==".bat" (
+            set "file_name=%%~nx"
+            set "file_extension=%%~xx"
+            ren "%%x" "!file_name!_%timestamp%!file_extension!"
         )
     )
-    popd
-
-    rem Delete the compressed file
-    del "%%f" > nul
 )
 
-rem Force refresh File Explorer
-taskkill /f /im explorer.exe > nul 2>&1
-start explorer.exe
-
-echo Extraction and renaming completed.
+echo Extraction, renaming, and refresh completed.
 
 pause

@@ -16,10 +16,12 @@ for /f "tokens=1-4 delims=:. " %%a in ("%time%") do (
 )
 set "timestamp=%date:/=-%_%hour:~-2%%minute:~-2%%second:~-2%_%millisecond:~-3%"
 
-rem Function to move all files from a sub-folder to the root folder
+rem Function to move all files from the sub-folder to the root folder
 :MoveFilesToRoot
 for /d %%d in (*) do (
-    cd "%%d"
+    pushd "%%d"
+
+    rem Rename and move files within the sub-folder
     for %%f in (*) do (
         if not "%%~xf"==".bat" (
             set "file_name=%%~nf"
@@ -28,14 +30,9 @@ for /d %%d in (*) do (
             move "!file_name!_%timestamp%!file_extension!" "%root_directory%" > nul 2>&1
         )
     )
-    cd..
-    rd "%%d" > nul 2>&1
-    goto :MoveFilesToRoot
-)
 
-rem Force refresh File Explorer
-taskkill /f /im explorer.exe > nul 2>&1
-start explorer.exe
+    popd
+)
 
 echo File renaming and moving completed.
 
